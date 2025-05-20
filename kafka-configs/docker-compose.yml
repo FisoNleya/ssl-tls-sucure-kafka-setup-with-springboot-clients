@@ -1,0 +1,85 @@
+networks:
+  kafka-net:
+    name: kafka-net
+    driver: bridge
+
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - 2181:2181
+    networks:
+      - kafka-net
+    tmpfs: "/datalog"
+
+
+  broker:
+    image: confluentinc/cp-kafka:latest
+    depends_on:
+      - zookeeper
+    ports:
+      - 9092:9092
+      - 9093:9093
+    networks:
+      - kafka-net
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,SSL://localhost:9093
+      KAFKA_SSL_CLIENT_AUTH: 'required'
+      KAFKA_SSL_KEYSTORE_FILENAME: '/certs/kafka-broker-keystore.jks'
+      KAFKA_SSL_KEYSTORE_CREDENTIALS: '/certs/kafka-credentials'
+      KAFKA_SSL_KEY_CREDENTIALS: '/certs/kafka-credentials'
+      KAFKA_SSL_TRUSTSTORE_FILENAME: '/certs/kafka-broker-truststore.jks'
+      KAFKA_SSL_TRUSTSTORE_CREDENTIALS: '/certs/kafka-credentials'
+
+    volumes:
+      - ./certs/:/etc/kafka/secrets/certs
+    restart: always
+
+
+  schema-registry:
+    image: confluentinc/cp-schema-registry:7.1.1
+    networks:
+      - kafka-net
+    hostname: schema-registry
+    container_name: schema-registry
+    restart: always
+    depends_on:
+      - broker
+    ports:
+      - "8081:8081"
+    environment:
+      SCHEMA_REGISTRY_HOST_NAME: schema-registry
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: 'broker:9092'
+      SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8081
+
+
+  akhq:
+    image: tchiotludo/akhq
+    networks:
+      - kafka-net
+    restart: always
+    ports:
+      - 8084:8080
+    links:
+      - broker
+      - schema-registry
+    environment:
+      AKHQ_CONFIGURATION: |
+        akhq:
+          connections:
+            docker-kafka-server:
+              properties:
+                bootstrap.servers: "broker:9092"
+              schema-registry:
+                url: "http://schema-registry:8081"
+              connect:
+                - name: "connect"
+                  url: "http://connect:8083"
