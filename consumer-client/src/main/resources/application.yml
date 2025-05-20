@@ -1,7 +1,10 @@
 
+server:
+  port: 8083
+
 spring:
   application:
-    name: keycloak-auth-service
+    name: kafka-consumer-service
   security:
     oauth2:
       resourceserver:
@@ -12,7 +15,7 @@ spring:
       protocol: "SSL"
     bootstrap-servers: localhost:9093
     ssl:
-      trust-store-location: classpath:/client-certs/kafka-client-keystore.jks
+      trust-store-location: classpath:/client-certs/kafka-client-truststore.jks
       trust-store-password: walker
       key-store-location: classpath:/client-certs/kafka-client-keystore.jks
       key-store-password: walker
@@ -32,8 +35,6 @@ spring:
       # value-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
 
-server:
-  port: 8083
 
 
 
