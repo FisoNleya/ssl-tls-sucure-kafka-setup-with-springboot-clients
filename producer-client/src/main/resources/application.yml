@@ -1,0 +1,20 @@
+
+
+spring:
+  application:
+    name: keycloak-auth-service
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${app.keycloak.serverUrl}/realms/${app.keycloak.realm}
+server:
+  port: 8082
+
+app:
+  keycloak:
+    admin:
+      clientId: secure-route-client
+    realm: secure-route
+    serverUrl: http://localhost:8080
+
